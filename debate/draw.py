@@ -19,6 +19,8 @@ DRAW_FLAG_DESCRIPTIONS = {
     "bub_dn_accom": "Bubble down (to accommodate)",
     "no_bub_updn":  "Can't bubble up/down",
     "pullup":       "Pull-up team",
+    "intermed_up":  "Pulled up to intermediate bracket",
+    "intermed_dn":  "Pulled down to intermediate bracket",
 }
 
 
@@ -38,6 +40,7 @@ class Pairing(object):
         self.bracket       = bracket
         self.room_rank     = room_rank
         self.flags         = list(flags)
+        self.team_flags    = dict()
         self.division      = division
         if winner is None:
             self._winner_index = None
@@ -104,6 +107,17 @@ class Pairing(object):
 
     def add_flags(self, flags):
         self.flags.extend(flags)
+
+    def add_team_flags(self, team, flags):
+        """Attaches flags to a team."""
+        team_flags = self.team_flags.setdefault(team, list())
+        team_flags.extend(flags)
+
+    def get_team_flags(self, team):
+        try:
+            return self.team_flags[team]
+        except KeyError:
+            return []
 
     def set_winner(self, team):
         try:
@@ -246,7 +260,7 @@ class BaseDrawGenerator(object):
         for pairing in pairings:
             for team in pairing.teams:
                 if team in self.team_flags:
-                    pairing.add_flags(self.team_flags[team])
+                    pairing.add_team_flags(team, self.team_flags[team])
 
     def balance_sides(self, pairings):
         if self.options["side_allocations"] == "balance":

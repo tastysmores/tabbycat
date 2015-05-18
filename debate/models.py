@@ -1054,8 +1054,13 @@ class Round(models.Model):
             debate.flags     = ",".join(pairing.flags) # comma-separated list
             debate.save()
 
-            aff = DebateTeam(debate=debate, team=pairing.teams[0], position=DebateTeam.POSITION_AFFIRMATIVE)
-            neg = DebateTeam(debate=debate, team=pairing.teams[1], position=DebateTeam.POSITION_NEGATIVE)
+            aff = DebateTeam(debate=debate, team=pairing.teams[0],
+                    position=DebateTeam.POSITION_AFFIRMATIVE,
+                    flags=pairing.get_team_flags(pairing.teams[0]))
+            neg = DebateTeam(debate=debate, team=pairing.teams[1],
+                    position=DebateTeam.POSITION_NEGATIVE,
+                    flags=pairing.get_team_flags(pairing.teams[1]))
+
 
             aff.save()
             neg.save()
@@ -1278,8 +1283,7 @@ class Debate(models.Model):
     bracket = models.FloatField(default=0)
     room_rank = models.IntegerField(default=0)
 
-    # comma-separated list of strings
-    flags = models.CharField(max_length=100, blank=True, null=True)
+    flags = models.CharField(max_length=100, blank=True, null=True) # comma-separated list of strings
 
     importance = models.IntegerField(default=2)
     result_status = models.CharField(max_length=1, choices=STATUS_CHOICES,
@@ -1389,11 +1393,17 @@ class Debate(models.Model):
         return result
 
     @property
-    def flags_all(self):
-        if not self.flags:
-            return []
-        else:
-            return [DRAW_FLAG_DESCRIPTIONS[f] for f in self.flags.split(",")]
+    def flag_descriptions(self):
+        """Returns a list of all flags, including those associated with teams.
+        Team flags have the team short name in parentheses after the flag
+        description."""
+        result = list()
+        if self.flags:
+            result.extend(DRAW_FLAG_DESCRIPTIONS[f] for f in self.flags.split(","))
+        for dt in self.debateteam_set.all():
+            if dt.flags:
+                result.extend(DRAW_FLAG_DESCRIPTIONS[f] for f in dt.flags.split(","))
+        return result
 
     @property
     def all_conflicts(self):
@@ -1482,6 +1492,8 @@ class DebateTeam(models.Model):
     debate = models.ForeignKey(Debate, db_index=True)
     team = models.ForeignKey(Team)
     position = models.CharField(max_length=1, choices=POSITION_CHOICES)
+
+    flags = models.CharField(max_length=100, blank=True, null=True) # comma-separated list of strings
 
     def __unicode__(self):
         return u'%s (%s)' % (self.team, self.debate)
