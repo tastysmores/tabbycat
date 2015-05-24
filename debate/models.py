@@ -1,3 +1,4 @@
+import logging
 import random
 import re
 from django.db import models
@@ -15,6 +16,8 @@ from debate.draw import DrawGenerator, DrawError, DRAW_FLAG_DESCRIPTIONS
 from warnings import warn
 from threading import BoundedSemaphore
 from collections import OrderedDict
+
+logger = logging.getLogger(__name__)
 
 class ScoreField(models.FloatField):
     pass
@@ -182,11 +185,27 @@ class Region(models.Model):
     name = models.CharField(db_index=True, max_length=100)
 
 
+class InstitutionManager(models.Manager):
+
+    def lookup(self, name, **kwargs):
+        """Queries for an institution with matching name in any of the three
+        name fields."""
+        for field in ('code', 'name', 'abbreviation'):
+            try:
+                kwargs[field] = name
+                return self.get(**kwargs)
+            except ObjectDoesNotExist:
+                kwargs.pop(field)
+        raise self.model.DoesNotExist("No institution matching '%s'" % name)
+
+
 class Institution(models.Model):
     code = models.CharField(max_length=20)
     name = models.CharField(db_index=True, max_length=100)
     abbreviation = models.CharField(max_length=8, default="")
     region = models.ForeignKey(Region, blank=True, null=True)
+
+    objects = InstitutionManager()
 
     class Meta:
         unique_together = [('name', 'code')]
@@ -326,6 +345,19 @@ def annotate_team_standings(teams, round=None, shuffle=False):
 
 
 class TeamManager(models.Manager):
+
+    def lookup(self, name, **kwargs):
+        """Queries for a team with a matching name."""
+        # TODO could be improved to take in a better range of fields
+        try:
+            institution_name, reference = name.rsplit(None, 1)
+        except:
+            print "Error in", repr(name)
+            raise
+        institution_name = institution_name.strip()
+        institution = Institution.objects.lookup(institution_name)
+        return self.get(institution=institution, reference=reference, **kwargs)
+
     def standings(self, round):
         """Returns a list."""
         teams = self.filter(
@@ -566,7 +598,7 @@ class Team(models.Model):
         if cached_value:
             return cache.get(cached_key)
         else:
-            cached_value = self.speaker_set.all().select_related('person')
+            cached_value = self.speaker_set.all().select_related('person_ptr')
             cache.set(cached_key, cached_value, None)
             return cached_value
 
@@ -793,6 +825,17 @@ class AdjudicatorInstitutionConflict(models.Model):
 
 class RoundManager(models.Manager):
     use_for_related_Fields = True
+
+    def lookup(self, name, **kwargs):
+        """Queries for a round with matching name in any of the two name
+        fields."""
+        for field in ('name', 'abbreviation'):
+            try:
+                kwargs[field] = name
+                return self.get(**kwargs)
+            except ObjectDoesNotExist:
+                kwargs.pop(field)
+        raise self.model.DoesNotExist("No round matching '%s'" % name)
 
     def get_queryset(self):
         return super(RoundManager,
@@ -1225,7 +1268,7 @@ class Round(models.Model):
 def update_round_cache(sender, instance, created, **kwargs):
     cached_key = "%s_%s_%s" % (instance.tournament.slug, instance.seq, 'object')
     cache.delete(cached_key)
-    print "Updated cache %s for %s" % (cached_key, instance)
+    logger.info("Updated cache %s for %s" % (cached_key, instance))
 
 # Update the cached round object when model is changed)
 signals.post_save.connect(update_round_cache, sender=Round)
@@ -1474,7 +1517,7 @@ class Debate(models.Model):
 class SRManager(models.Manager):
     use_for_related_fields = True
     def get_queryset(self):
-        return super(SRManager, self).get_queryset().select_related('debate', 'team', 'position')
+        return super(SRManager, self).get_queryset().select_related('debate')
 
 
 class DebateTeam(models.Model):
@@ -1936,7 +1979,7 @@ class Motion(models.Model):
     flagged = models.BooleanField(default=False, help_text="WADL: Allows for particular motions to be flagged as contentious")
     round = models.ForeignKey(Round, db_index=True)
     objects = MotionManager()
-    divisions = models.ManyToManyField('Division', blank=True, null=True)
+    divisions = models.ManyToManyField('Division', blank=True)
 
     def __unicode__(self):
         return self.text

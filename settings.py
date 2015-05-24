@@ -29,7 +29,6 @@ MEDIA_URL           = '/media/'
 STATIC_URL          = '/static/'
 TIME_ZONE           = 'Australia/Melbourne'
 LANGUAGE_CODE       = 'en-us'
-SITE_ID             = 1
 USE_I18N            = True
 TEST_RUNNER         = 'django.test.runner.DiscoverRunner'
 
