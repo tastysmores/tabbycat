@@ -1099,10 +1099,10 @@ class Round(models.Model):
 
             aff = DebateTeam(debate=debate, team=pairing.teams[0],
                     position=DebateTeam.POSITION_AFFIRMATIVE,
-                    flags=pairing.get_team_flags(pairing.teams[0]))
+                    flags=",".join(pairing.get_team_flags(pairing.teams[0])))
             neg = DebateTeam(debate=debate, team=pairing.teams[1],
                     position=DebateTeam.POSITION_NEGATIVE,
-                    flags=pairing.get_team_flags(pairing.teams[1]))
+                    flags=",".join(pairing.get_team_flags(pairing.teams[1])))
 
 
             aff.save()
@@ -1445,7 +1445,8 @@ class Debate(models.Model):
             result.extend(DRAW_FLAG_DESCRIPTIONS[f] for f in self.flags.split(","))
         for dt in self.debateteam_set.all():
             if dt.flags:
-                result.extend(DRAW_FLAG_DESCRIPTIONS[f] for f in dt.flags.split(","))
+                result.extend(DRAW_FLAG_DESCRIPTIONS[f] + " (" + dt.team.short_name + ")"
+                        for f in dt.flags.split(","))
         return result
 
     @property

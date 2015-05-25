@@ -54,6 +54,7 @@ class HungarianAllocator(Allocator):
 
         n_adjudicators = len(self.adjudicators)
         n_debates = len(self.debates)
+        assert n_adjudicators >= n_debates, "There aren't enough adjudicators to cover all the debates."
 
         n_solos = n_debates - (n_adjudicators - n_debates)/2
 
@@ -68,7 +69,7 @@ class HungarianAllocator(Allocator):
         panel_debates = self.debates_sorted[len(chairs):]
         panellists = [a for a in self.adjudicators_sorted if a not in chairs]
 
-        assert len(panel_debates) * 3 <= len(panellists)
+        assert len(panel_debates) * 3 <= len(panellists), "There aren't enough panellists to cover all the debates."
 
 
         print "costing chairs"

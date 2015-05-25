@@ -518,7 +518,7 @@ class PowerPairedDrawGenerator(BaseDrawGenerator):
             raise DrawError("Last bracket is still odd!\n" + repr(pullup_needed_for))
 
     @classmethod
-    def _intermediate_bubbles(cls, brackets):
+    def _intermediate_bubbles_common(cls, brackets):
         """Operates in-place."""
         new = OrderedDict()
         odd_team = None
@@ -535,10 +535,30 @@ class PowerPairedDrawGenerator(BaseDrawGenerator):
         brackets.clear()
         brackets.update(new)
 
+    def _intermediate_bubbles_add_team_flags(self, brackets):
+        """Adds team flags to teams in intermediate brackets.
+        Requires Team.points to be defined."""
+        for points, teams in brackets.iteritems():
+            if int(points) != points:
+                for team in teams:
+                    if not hasattr(team, "points"):
+                        raise DrawError("To use intermediate bubbles, teams must have a 'points' attribute defined.")
+                    if team.points > points:
+                        self.add_team_flag(team, "intermed_dn")
+                    elif team.points < points:
+                        self.add_team_flag(team, "intermed_up")
+                    else:
+                        raise DrawError("Intermediate bracket team has same number of points as bracket")
+
+    def _intermediate_bubbles(self, brackets):
+        """Operates in-place."""
+        self._intermediate_bubbles_common(brackets)
+        self._intermediate_bubbles_add_team_flags(brackets)
+
     def _intermediate_bubbles_with_up_down(self, brackets):
         """Operates in-place.
         Requires Team.institution and Team.seen() to be defined."""
-        self._intermediate_bubbles(brackets) # operates in-place
+        self._intermediate_bubbles_common(brackets) # operates in-place
         # Check each of the intermediate bubbles for conflicts.
         # If there is one, try swapping the top team with the bottom team
         # of the bracket above. Failing that, try the same with the bottom
@@ -586,6 +606,9 @@ class PowerPairedDrawGenerator(BaseDrawGenerator):
 
             # if nothing worked, add a "didn't work" flag
             self.add_team_flag(teams[0], "no_bub_updn")
+
+        # finally, add the team flags *after* all bubble-up-bubble-downs
+        self._intermediate_bubbles_add_team_flags(brackets)
 
 
     ## Pairings generation
@@ -812,8 +835,7 @@ class PowerPairedWithAllocatedSidesDrawGenerator(PowerPairedDrawGenerator):
         if pullups_needed_for:
             raise DrawError("Last bracket still needed pullups!\n" + repr(pullups_needed_for))
 
-    @classmethod
-    def _intermediate_bubbles_1(cls, brackets):
+    def _intermediate_bubbles_1(self, brackets):
         """Operates in-place.
         This implements the first intermediate bubbles method, where there is at most
         one intermediate bubble between brackets, but may have pullups from multiple
@@ -865,8 +887,9 @@ class PowerPairedWithAllocatedSidesDrawGenerator(PowerPairedDrawGenerator):
         brackets.clear()
         brackets.update(new_sorted)
 
-    @classmethod
-    def _intermediate_bubbles_2(cls, brackets):
+        self._intermediate_bubbles_add_team_flags(brackets)
+
+    def _intermediate_bubbles_2(self, brackets):
         """Operates in-place.
         This implements the second intermediate bubbles method, where all debates
         in the same intermediate bubble have the same number of wins, but there
@@ -932,6 +955,8 @@ class PowerPairedWithAllocatedSidesDrawGenerator(PowerPairedDrawGenerator):
 
         brackets.clear()
         brackets.update(new_sorted)
+
+        self._intermediate_bubbles_add_team_flags(brackets)
 
     def _intermediate_bubbles_with_up_down():
         """This should never be called - the associated option string is removed

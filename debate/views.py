@@ -919,7 +919,10 @@ def create_adj_allocation(request, round):
         return HttpResponseBadRequest("Draw is not confirmed, confirm draw to run auto-allocation.")
 
     from debate.adjudicator.hungarian import HungarianAllocator
-    round.allocate_adjudicators(HungarianAllocator)
+    try:
+        round.allocate_adjudicators(HungarianAllocator)
+    except AssertionError as e:
+        return HttpResponseBadRequest(str(e))
 
     return _json_adj_allocation(round.get_draw(), round.unused_adjudicators())
 
