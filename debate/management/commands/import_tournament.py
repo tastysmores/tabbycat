@@ -18,12 +18,12 @@ class Command(BaseCommand):
 
         parser.add_argument('-r', '--auto-rounds', type=int, metavar='N', default=None,
             help='Create N preliminary rounds automatically. Use either this or a rounds.csv file, but not both.')
-        parser.add_argument('-S', '--share-data', action='store_true', default=False,
-            help='If specified, all institutions and adjudicators will not be tournament-specific.')
         parser.add_argument('--force', action='store_true', default=False,
-            help='Delete tournaments if they already exist.')
+            help='Do not prompt before deleting tournament that already exists.')
+        parser.add_argument('--keep-existing', action='store_true', default=False,
+            help='Keep existing tournament and ')
         parser.add_argument('--delete-institutions', action='store_true', default=False,
-            help='Delete all institutions from the database, whether with the tournament or not.')
+            help='Delete all institutions from the database.')
         parser.add_argument('--relaxed', action='store_false', dest='strict', default=True,
             help='Don\'t crash if there is an error, just skip and keep going.')
 
@@ -44,7 +44,8 @@ class Command(BaseCommand):
             self.delete_institutions()
         self.make_tournament()
         loglevel = [logging.ERROR, logging.WARNING, DUPLICATE_INFO, logging.DEBUG][self.verbosity]
-        self.importer = AnorakTournamentDataImporter(self.t, loglevel=loglevel, strict=options['strict'])
+        self.importer = AnorakTournamentDataImporter(self.t, loglevel=loglevel,
+                strict=options['strict'], expect_unique=not options['keep_existing'])
         self.make_rounds()
 
         self._make('config')
@@ -129,7 +130,7 @@ class Command(BaseCommand):
         and sets self.t to be the newly-created tournament.
         """
         slug, name, short_name = self.resolve_tournament_fields()
-        self.clean_existing_tournament(slug)
+        self.check_existing_tournament(slug)
         self.t = self.create_tournament(slug, name, short_name)
 
     def make_rounds(self):
@@ -152,22 +153,33 @@ class Command(BaseCommand):
         slug = self.options['slug'] or slugify(basename)
         return slug, name, short_name
 
-    def clean_existing_tournament(self, slug):
-        """Checks if a tournament exists and deletes it if it does."""
-        if self.options['force']:
-            return
-        if m.Tournament.objects.filter(slug=slug).exists():
-            self.stdout.write("WARNING! A tournament with slug '" + slug + "' already exists.")
-            self.stdout.write("You are about to delete EVERYTHING for this tournament.")
-            response = raw_input("Are you sure? ")
-            if response != "yes":
-                raise CommandError("Cancelled by user.")
+    def check_existing_tournament(self, slug):
+        """Checks if a tournament exists. If --keep-existing was not used,
+        deletes it. If it was used, and the tournament does not exist, raises
+        and error."""
+        exists = m.Tournament.objects.filter(slug=slug).exists()
+        if exists and not self.options['keep_existing']:
+            if not self.options['force']:
+                self.stdout.write("WARNING! A tournament with slug '" + slug + "' already exists.")
+                self.stdout.write("You are about to delete EVERYTHING for this tournament.")
+                response = raw_input("Are you sure? ")
+                if response != "yes":
+                    raise CommandError("Cancelled by user.")
             m.Tournament.objects.filter(slug=slug).delete()
+
+        elif not exists and self.options['keep_existing']:
+            raise CommandError("Used --keep-existing, but tournament %r does not exist" % slug)
 
     def create_tournament(self, slug, name, short_name):
         """Creates, saves and returns a tournament with the given slug.
         Raises exception on error."""
-        self._print_stage("Creating tournament '" + slug + "'")
-        t = m.Tournament(name=name, short_name=short_name, slug=slug)
-        t.save()
-        return t
+        try:
+            existing = m.Tournament.objects.get(slug=slug)
+        except m.Tournament.DoesNotExist:
+            self._print_stage("Creating tournament %r" % slug)
+            t = m.Tournament(name=name, short_name=short_name, slug=slug)
+            t.save()
+            return t
+        else:
+            self._warning("Tournament %r already exists, not creating" % slug)
+            return existing
