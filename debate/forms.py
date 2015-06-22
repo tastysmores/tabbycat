@@ -309,9 +309,8 @@ class BallotSetForm(forms.Form):
 
         for side, pos in self.SIDES_AND_POSITIONS:
             order.append(self._fieldname_speaker(side, pos))
-            order.append(self._fieldname_score(self.adjudicators[0], side, pos))
 
-        for adj, side, pos in itertools.product(self.adjudicators[1:], self.SIDES, self.POSITIONS):
+        for adj, side, pos in itertools.product(self.adjudicators, self.SIDES, self.POSITIONS):
             order.append(self._fieldname_score(adj, side, pos))
 
         if 'password' in self.fields:
@@ -322,7 +321,8 @@ class BallotSetForm(forms.Form):
         order.extend(['discarded', 'confirmed', 'debate_result_status'])
 
         if self.motions.count() <= 1:
-            order.extend(['motion', 'aff_motion_veto', 'neg_motion_veto'])
+            order.append('motion')
+            order.extend(self._fieldname_motion_veto(side) for side in self.SIDES)
 
         # now, set
         for i, name in enumerate(order, start=1):

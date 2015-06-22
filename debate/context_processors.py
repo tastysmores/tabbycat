@@ -19,6 +19,7 @@ def debate_context(request):
             'public_breaking_adjs'    : request.tournament.config.get('public_breaking_adjs'),
             'esl_break'               : request.tournament.config.get('esl_break_size') > 0,
             'public_participants'     : request.tournament.config.get('public_participants'),
+            'show_public_eslefl'      : request.tournament.config.get('public_participants_eslefl'),
             'public_side_allocations' : request.tournament.config.get('public_side_allocations') \
                                             and request.tournament.config.get('draw_side_allocations') == "preallocated",
             'public_divisions'        : request.tournament.config.get('public_divisions'),
@@ -51,3 +52,23 @@ def debate_context(request):
         return d
 
     return {}
+
+def get_menu_highlight(request):
+    if "side_allocations" in request.path:
+        return {'sides_nav': True}
+    elif "ballots" in request.path:
+        return {'ballots_nav': True}
+    elif "results" in request.path:
+        return {'ballots_nav': True}
+    elif "draw" in request.path:
+        return {'draw_nav': True}
+    elif "feedback" in request.path:
+        return {'feedback_nav': True}
+    elif "division_allocations" in request.path:
+        return {'divisions_nav': True}
+    elif "standings" in request.path:
+        return {'standings_nav': True}
+    elif "break" in request.path:
+        return {'break_nav': True}
+    else:
+        return {'no_highlight': True} # Context processors must return a dict

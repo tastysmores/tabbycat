@@ -38,7 +38,6 @@ TEST_RUNNER         = 'django.test.runner.DiscoverRunner'
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'debate.middleware.DebateMiddleware',
@@ -54,7 +53,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.media",
     "django.core.context_processors.csrf",
     "django.core.context_processors.static",
-    "debate.context_processors.debate_context",
+    "debate.context_processors.debate_context", # For tournament config vars
+    "debate.context_processors.get_menu_highlight", # For nav highlights
     'django.core.context_processors.request', # For SUIT
 )
 
@@ -68,7 +68,6 @@ INSTALLED_APPS = (
     'django.contrib.humanize',
     'debate',
     'compressor',
-    'debug_toolbar',
 )
 
 LOGIN_REDIRECT_URL = '/'
@@ -76,6 +75,9 @@ LOGIN_REDIRECT_URL = '/'
 # =========
 # = Caching =
 # =========
+
+PUBLIC_PAGE_CACHE_TIMEOUT = os.environ.get('PUBLIC_PAGE_CACHE_TIMEOUT', None) or (60 * 10)
+TAB_PAGES_CACHE_TIMEOUT = os.environ.get('TAB_PAGES_CACHE_TIMEOUT', None) or (60 * 120)
 
 # Default non-heroku cache is to use local memory
 CACHES = {
@@ -168,6 +170,9 @@ if os.environ.get('DEBUG', ''):
 # ===========================
 
 try:
-    from local_settings import *
-except Exception as e:
-    pass
+    LOCAL_SETTINGS
+except NameError:
+    try:
+        from local_settings import *
+    except ImportError:
+        pass

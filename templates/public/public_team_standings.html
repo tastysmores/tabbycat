@@ -11,15 +11,15 @@
   <table id="dataTable" class="table table-hover table-striped" cellspacing="0" cellpadding="0">
     <thead>
       <tr>
+        {% if enable_divisions %}
+          <th><span class="glyphicon glyphicon-th-list" data-toggle="tooltip" title="" data-original-title="Division"></span></th>
+        {% endif %}
         <th>Team</th>
         {% if show_emoji > 0 %}
           <th class="team-emoji"></th>
         {% endif %}
         {% if show_institutions > 0 %}
           <th>Institution</th>
-        {% endif %}
-        {% if enable_divisions %}
-          <th><span class="glyphicon glyphicon-th-list" data-toggle="tooltip" title="" data-original-title="Division"></span></th>
         {% endif %}
         {% if show_team_points %}
           <th>Pts</th>
@@ -43,7 +43,7 @@
         <td>{{ team.division.name }}</td>
       {% endif %}
       <td>
-        <span title="<h5>{{ team.long_name }}</h5>{% if show_speakers_in_draw %}{{ team.speakers|join:"<br>" }}{% endif %}" data-toggle="tooltip" id="team_{{ team.id }}" class="team" href="#">
+        <span {% if show_speakers_in_draw %}class="team-speakers-hover" id="team_speakers_{{ team.id }}"{% endif %}>
           {{ team.short_name }}
         </span>
       </td>
@@ -57,7 +57,7 @@
         <td>{{ team.points }}</td>
       {% endif %}
       {% if show_avg_margin %}
-        <th><span data-toggle="tooltip" title="Average Winning Margin">AWM</span></th>
+        <th>{{ team.avg_margin }}</th>
       {% endif %}
       <td>{{ team.wins }}</td>
       {% for round_results in team.round_results %}
@@ -68,12 +68,12 @@
             <td>
               {% if round_results.score == 0 %}
                 {% with status=round_results.win|yesno:"Won (via forfeit),Forfeitted" icon=round_results.win|yesno:"glyphicon-share-alt text-success,glyphicon-eye-close text-danger" %}
-                <span title="{{ status }} against {{ round_results.opposition.short_name }} ({{ round_results.opposition.speakers|join:", " }})" data-toggle="tooltip">
+                <span title="{{ status }} against {{ round_results.opposition.short_name }}" data-toggle="tooltip">
                   <span class="glyphicon {{ icon }}"></span>
                 {% endwith %}
               {% else %}
                 {% with status=round_results.win|yesno:"Won,Lost" icon=round_results.win|yesno:"glyphicon-arrow-up text-success,glyphicon-arrow-down text-danger" %}
-                <span title="{{ status }} against {{ round_results.opposition.short_name }} ({{ round_results.opposition.speakers|join:", " }})" data-toggle="tooltip">
+                <span title="{{ status }} against {{ round_results.opposition.short_name }}" data-toggle="tooltip">
                   <span class="glyphicon {{ icon }}"></span>
                 {% endwith %}
               {% endif %}
@@ -104,8 +104,8 @@
    <script type="text/javascript" charset="utf-8">
     $(document).ready( function() {
       var dTable = $("#dataTable").DataTable({
-        {% if show_emoji and show_institutions and enable_divisions and show_team_points and show_avg_margin %}
-          "aaSorting": [[4, "desc" ], [ 5, "desc" ]], [ 6, "desc" ]] // WADL
+        {% if enable_divisions and show_team_points and show_avg_margin %}
+          "aaSorting": [[2, "desc" ], [ 3, "desc" ], [ 4, "desc" ]], // WADL
         {% elif show_emoji and show_institutions %}
           "aaSorting": [[ 3, "desc" ], [ 0, "asc" ]],
         {% elif show_emoji or show_institutions %}

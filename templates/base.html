@@ -56,7 +56,7 @@
 
   </div>
 
-  {% include "footer.html" %}
+  {% block footer %}{% include "footer.html" %}{% endblock footer %}
 
   {% compress js %}
   <script type="text/javascript" language="javascript" charset="utf-8" src="{% static 'js/modernizr.js' %}"></script>
@@ -66,6 +66,7 @@
   <script type="text/javascript" language="javascript" charset="utf-8" src="{% static 'js/jquery.validate.min.js' %}"></script>
   <script type="text/javascript" language="javascript" charset="utf-8" src="{% static 'js/datatables/dataTables.bootstrap.js' %}"></script>
   <script type="text/javascript" language="javascript" charset="utf-8" src="{% static 'js/datatables/dataTables.fixedHeader.min.js' %}"></script>
+  {% endcompress %}
   <script type="text/javascript">
     $.extend( true, $.fn.dataTable.defaults, {
 
@@ -86,6 +87,38 @@
         'html': true,
         'placement': 'bottom'
       });
+
+      // Do the team speakers as an AJAX to boost page rendering
+      $('.team-speakers-hover').tooltip({
+        title: getTeamSpeakers,
+        'html': true,
+        'placement': 'bottom'
+      });
+
+      var cachedData = Array();
+
+      function getTeamSpeakers(){
+          var element = $(this);
+          var id = element.attr('id').replace("team_speakers_", "");
+
+          if(id in cachedData){
+              return cachedData[id];
+          }
+
+          var localData = "error";
+
+          $.ajax('{{ tournament.get_public_url  }}team_speakers/' + id + '/', {
+              async: false,
+              success: function(data){
+                  localData = data[0] + ", " + data[1] + ", " + data[2];
+              }
+          });
+
+          cachedData[id] = localData;
+
+          return localData;
+      }
+
     });
 
     // Test for emoji support, if not present then load and execute a polyfill
@@ -100,7 +133,6 @@
     });
 
   </script>
-  {% endcompress %}
   {% block extra-js %}{% endblock extra-js %}
 
   {% if debug %}

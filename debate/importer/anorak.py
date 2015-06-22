@@ -56,18 +56,47 @@ class AnorakTournamentDataImporter(BaseTournamentDataImporter):
 
         return counts, errors
 
-    def import_institutions(self, f):
-        """Imports institutions from a file.
+    def import_regions(self, f):
+        """Imports regions from a file.
         Each line has:
-            name, code, abbreviation
+            name
         """
+        def _region_line_parser(line):
+            kwargs = {
+                'name'       : line[0],
+            }
+            return kwargs
+        return self._import(f, _region_line_parser, m.Region)
+
+    def import_institutions(self, f, auto_create_regions=False):
+        """Imports institutions from a file, also creating regions as needed
+        (unless 'auto_create_regions' is False)
+        Each line has:
+            name, code, abbreviation, region
+        """
+        if auto_create_regions:
+            def _region_line_parser(line):
+                if not line[3]:
+                    return None
+                return {
+                    'name': line[3],
+                }
+            counts, errors = self._import(f, _region_line_parser,
+                    m.Region, expect_unique=False)
+        else:
+            counts = None
+            errors = None
+
         def _institution_line_parser(line):
             return {
                 'name'         : line[0],
                 'code'         : line[1],
                 'abbreviation' : line[2],
+                'region'       : m.Region.objects.get(name=line[3]) if len(line) > 3  and line[3] else None,
             }
-        return self._import(f, _institution_line_parser, m.Institution)
+        counts, errors = self._import(f, _institution_line_parser, m.Institution, counts=counts, errors=errors)
+
+        return counts, errors
 
     def import_venue_groups(self, f):
         """Imports venue groups from a file.
@@ -111,7 +140,7 @@ class AnorakTournamentDataImporter(BaseTournamentDataImporter):
                 'tournament' : self.tournament,
                 'name'       : line[0],
                 'priority'   : int(line[1]) if len(line) > 1 else 10,
-                'group'      : m.VenueGroup.objects.get(name=line[2]) if len(line) > 2 else None,
+                'group'      : m.VenueGroup.objects.get(name=line[2]) if len(line) > 2 and line[2] else None,
                 'time'       : line[3] if len(line) > 3 else None,
             }
         counts, errors = self._import(f, _venue_line_parser, m.Venue, counts=counts, errors=errors)
@@ -193,10 +222,11 @@ class AnorakTournamentDataImporter(BaseTournamentDataImporter):
                 'tournament'  : self.tournament,
                 'test_score'  : float(line[2]),
                 'gender'      : self._lookup(self.GENDERS, line[3], "gender") if len(line) > 3 and line[3] else None,
-                'novice'      : int(line[4]) if len(line) > 4 and line[4] else False,
-                'phone'       : line[5] if len(line) > 5 else None,
-                'email'       : line[6] if len(line) > 6 else None,
-                'notes'       : line[7] if len(line) > 7 else None,
+                'independent' : bool(line[4]) if len(line) > 4 and line[4] else False,
+                'novice'      : int(line[5]) if len(line) > 5 and line[5] else False,
+                'phone'       : line[6] if len(line) > 6 else None,
+                'email'       : line[7] if len(line) > 7 else None,
+                'notes'       : line[8] if len(line) > 8 else None,
             }
         counts, errors = self._import(f, _adjudicator_line_parser, m.Adjudicator)
 
@@ -220,11 +250,11 @@ class AnorakTournamentDataImporter(BaseTournamentDataImporter):
                 counts=counts, errors=errors)
 
         def _institution_conflict_parser(line):
-            if len(line) <= 8 or not line[8]:
+            if len(line) <= 9 or not line[9]:
                 return
             adj_inst = m.Institution.objects.lookup(line[1])
             adjudicator = m.Adjudicator.objects.get(name=line[0], institution=adj_inst, tournament=self.tournament)
-            for institution_name in line[8].split(","):
+            for institution_name in line[9].split(","):
                 institution_name = institution_name.strip()
                 institution = m.Institution.objects.lookup(institution_name)
                 yield {
@@ -235,11 +265,11 @@ class AnorakTournamentDataImporter(BaseTournamentDataImporter):
                 counts=counts, errors=errors)
 
         def _team_conflict_parser(line):
-            if len(line) <= 9 or not line[9]:
+            if len(line) <= 10 or not line[10]:
                 return
             adj_inst = m.Institution.objects.lookup(line[1])
             adjudicator = m.Adjudicator.objects.get(name=line[0], institution=adj_inst, tournament=self.tournament)
-            for team_name in line[9].split(","):
+            for team_name in line[10].split(","):
                 team = m.Team.objects.lookup(team_name)
                 yield {
                     'adjudicator' : adjudicator,

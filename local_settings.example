@@ -1,5 +1,8 @@
 import os
 
+LOCAL_SETTINGS = True
+from settings import *
+
 # ===================
 # = Server Settings =
 # ===================
@@ -15,7 +18,8 @@ DEBUG_ASSETS        = True
 # ==================
 
 INTERNAL_IPS = (
-    '0.0.0.0','127.0.0.1'
+    '0.0.0.0',
+    '127.0.0.1'
 )
 
 MIDDLEWARE_CLASSES += (
@@ -29,17 +33,18 @@ INSTALLED_APPS += (
 DEBUG_TOOLBAR_PATCH_SETTINGS = False
 
 DEBUG_TOOLBAR_PANELS = (
-    'debug_toolbar.panels.version.VersionDebugPanel',
-    'debug_toolbar.panels.timer.TimerDebugPanel',
-    'debug_toolbar.panels.settings_vars.SettingsVarsDebugPanel',
-    'debug_toolbar.panels.headers.HeaderDebugPanel',
-    #'debug_toolbar.panels.profiling.ProfilingDebugPanel',
-    'debug_toolbar.panels.request_vars.RequestVarsDebugPanel',
-    'debug_toolbar.panels.sql.SQLDebugPanel',
-    'debug_toolbar.panels.template.TemplateDebugPanel',
-    'debug_toolbar.panels.cache.CacheDebugPanel',
-    'debug_toolbar.panels.signals.SignalDebugPanel',
-    'debug_toolbar.panels.logger.LoggingPanel',
+    'debug_toolbar.panels.versions.VersionsPanel',
+    'debug_toolbar.panels.timer.TimerPanel',
+    'debug_toolbar.panels.settings.SettingsPanel',
+    'debug_toolbar.panels.headers.HeadersPanel',
+    'debug_toolbar.panels.request.RequestPanel',
+    'debug_toolbar.panels.sql.SQLPanel',
+    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+    'debug_toolbar.panels.templates.TemplatesPanel',
+    'debug_toolbar.panels.cache.CachePanel',
+    'debug_toolbar.panels.signals.SignalsPanel',
+    'debug_toolbar.panels.logging.LoggingPanel',
+    'debug_toolbar.panels.redirects.RedirectsPanel',
 )
 
 DEBUG_TOOLBAR_CONFIG = {
@@ -50,9 +55,12 @@ DEBUG_TOOLBAR_CONFIG = {
 # = Cache Settings =
 # ===================
 
+PUBLIC_PAGE_CACHE_TIMEOUT   = 1
+TAB_PAGES_CACHE_TIMEOUT     = 1
+
 COMPRESS_ENABLED    = False # Output still rendered/converted just not smushed
 COMPRESS_OFFLINE    = True
-TEMPLATE_LOADERS = (
+TEMPLATE_LOADERS    = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
 ) # Disabling template caching locally
@@ -62,7 +70,7 @@ TEMPLATE_LOADERS = (
 # ===========================
 
 SECRET_KEY          = '#2q43u&tp4((4&m3i8v%w-6z6pp7m(v0-6@w@i!j5n)n15epwc'
-DATABASES = {
+DATABASES           = {
     'default': {
         'ENGINE'  : 'django.db.backends.postgresql_psycopg2',
         'NAME'    : '',

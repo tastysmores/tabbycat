@@ -184,6 +184,9 @@ class Venue(models.Model):
 class Region(models.Model):
     name = models.CharField(db_index=True, max_length=100)
 
+    def __unicode__(self):
+        return u'%s' % (self.name)
+
 
 class InstitutionManager(models.Manager):
 
@@ -408,7 +411,7 @@ class TeamManager(models.Manager):
 
         FILTER_ARGS = {
             'open': dict(),
-            'esl':  dict(type=Team.TYPE_ESL),
+            'esl':  dict(esl=True),
         }
         filterargs = FILTER_ARGS[category]
 
@@ -507,6 +510,9 @@ class Team(models.Model):
     # swing/composite)
     cannot_break = models.BooleanField(default=False)
 
+    esl = models.BooleanField(default=False)
+    efl = models.BooleanField(default=False)
+
     venue_preferences = models.ManyToManyField(VenueGroup,
         through = 'TeamVenuePreference',
         related_name = 'VenueGroup',
@@ -514,13 +520,11 @@ class Team(models.Model):
     )
 
     TYPE_NONE = 'N'
-    TYPE_ESL = 'E'
     TYPE_SWING = 'S'
     TYPE_COMPOSITE = 'C'
     TYPE_BYE = 'B'
     TYPE_CHOICES = (
         (TYPE_NONE, 'None'),
-        (TYPE_ESL, 'ESL'),
         (TYPE_SWING, 'Swing'),
         (TYPE_COMPOSITE, 'Composite'),
         (TYPE_BYE, 'Bye'),
@@ -558,6 +562,10 @@ class Team(models.Model):
         else:
             return unicode(self.reference)
 
+    @property
+    def region(self):
+        return self.get_cached_institution().region
+
     def get_aff_count(self, seq=None):
         return self._get_count(DebateTeam.POSITION_AFFIRMATIVE, seq)
 
@@ -593,14 +601,7 @@ class Team(models.Model):
 
     @cached_property
     def speakers(self):
-        cached_key = "%s_%s_%s" % ('teamid', self.id, '_speaker__objects')
-        cached_value = cache.get(cached_key)
-        if cached_value:
-            return cache.get(cached_key)
-        else:
-            cached_value = self.speaker_set.all().select_related('person_ptr')
-            cache.set(cached_key, cached_value, None)
-            return cached_value
+        return self.speaker_set.all().select_related('person_ptr')
 
     def seen(self, other, before_round=None):
         debates = self.get_debates(before_round)
@@ -711,6 +712,8 @@ class Adjudicator(Person):
     conflicts = models.ManyToManyField('Team', through='AdjudicatorConflict')
 
     breaking = models.BooleanField(default=False)
+    independent = models.BooleanField(default=False, blank=True)
+    adj_core = models.BooleanField(default=False, blank=True)
 
     objects = AdjudicatorManager()
 
@@ -733,6 +736,10 @@ class Adjudicator(Person):
     @property
     def is_unaccredited(self):
         return self.novice
+
+    @property
+    def region(self):
+        return self.institution.region
 
     @cached_property
     def score(self):
@@ -817,6 +824,9 @@ class AdjudicatorConflict(models.Model):
     adjudicator = models.ForeignKey(Adjudicator)
     team = models.ForeignKey(Team)
 
+class AdjudicatorAdjudicatorConflict(models.Model):
+    adjudicator = models.ForeignKey(Adjudicator, related_name="source_adjudicator")
+    conflict_adjudicator = models.ForeignKey(Adjudicator, related_name="target_adjudicator", verbose_name="Adjudicator")
 
 class AdjudicatorInstitutionConflict(models.Model):
     adjudicator = models.ForeignKey(Adjudicator)

@@ -18,11 +18,20 @@ admin.site.register(models.Tournament,TournamentAdmin)
 # ==============================================================================
 
 class InstitutionAdmin(admin.ModelAdmin):
-    list_display = ('name','code','abbreviation')
+    list_display = ('name','code','abbreviation','region')
     ordering = ('name',)
     search_fields = ('name',)
 
 admin.site.register(models.Institution, InstitutionAdmin)
+
+# ==============================================================================
+# Region
+# ==============================================================================
+
+class RegionAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(models.Region, RegionAdmin)
 
 # ==============================================================================
 # DebateTeam
@@ -115,6 +124,13 @@ class AdjudicatorConflictInline(admin.TabularInline):
     model = models.AdjudicatorConflict
     extra = 1
     raw_id_fields = ('team',)
+    verbose_name_plural = "Adjudicator team conflicts"
+
+class AdjudicatorAdjudicatorConflictInline(admin.TabularInline):
+    model = models.AdjudicatorAdjudicatorConflict
+    fk_name = "adjudicator"
+    extra = 1
+    raw_id_fields = ('conflict_adjudicator',)
 
 class AdjudicatorInstitutionConflictInline(admin.TabularInline):
     model = models.AdjudicatorInstitutionConflict
@@ -125,10 +141,10 @@ class AdjudicatorTestScoreHistoryInline(admin.TabularInline):
     extra = 1
 
 class AdjudicatorAdmin(admin.ModelAdmin):
-    list_display = ('name', 'institution', 'tournament','novice')
+    list_display = ('name', 'institution', 'tournament','novice','independent')
     search_fields = ('name', 'tournament__name', 'institution__name', 'institution__code',)
     list_filter = ('tournament', 'name')
-    inlines = (AdjudicatorConflictInline,AdjudicatorInstitutionConflictInline, AdjudicatorTestScoreHistoryInline)
+    inlines = (AdjudicatorConflictInline,AdjudicatorInstitutionConflictInline, AdjudicatorAdjudicatorConflictInline, AdjudicatorTestScoreHistoryInline)
 
 admin.site.register(models.Adjudicator, AdjudicatorAdmin)
 
