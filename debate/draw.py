@@ -546,7 +546,6 @@ class PowerPairedDrawGenerator(BaseDrawGenerator):
     def _intermediate_bubbles_add_team_flags(self, brackets):
         """Adds team flags to teams in intermediate brackets.
         Requires Team.points to be defined."""
-        # Skip if teams are integers (for unit test purposes)
         for points, teams in self._iter_brackets(brackets):
             if int(points) != points:
                 for team in teams:

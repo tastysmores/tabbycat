@@ -122,6 +122,9 @@ class TestPowerPairedDrawGeneratorParts(unittest.TestCase):
                 if isinstance(x[-1], str) and len(x) > 2:
                     flags = [x[-1]]
                     x = x[:-1]
+                elif isinstance(x[-1], list) and len(x) > 2:
+                    flags = x[-1]
+                    x = x[:-1]
                 else:
                     flags = None
                 if len(x) == 2:
@@ -147,9 +150,9 @@ class TestPowerPairedDrawGeneratorParts(unittest.TestCase):
 
     def test_intermediate_brackets_avoid_conflicts_1(self):
         brackets = OrderedDict([
-            (4, [(1, 'A'), (2, 'B'), (3, 'C'), (4, 'A', 'bub_up_accom'), (5, 'C', 12, 'bub_up_inst')]),
-            (3, [(6, 'C'), (7, 'D'), (8, 'A', 10), (9, 'B', 10)]),
-            (2, [(10, 'D', 8, 9, 'bub_dn_hist'), (11, 'A', 'bub_dn_accom'), (12, 'C', 5), (13, 'B'), (14, 'C', 15)]),
+            (4, [(1, 'A'), (2, 'B'), (3, 'C'), (4, 'A', ['bub_up_accom', 'intermed_dn']), (5, 'C', 12, 'bub_up_inst')]),
+            (3, [(6, 'C', 'intermed_up'), (7, 'D'), (8, 'A', 10), (9, 'B', 10, 'intermed_dn')]),
+            (2, [(10, 'D', 8, 9, 'bub_dn_hist'), (11, 'A', ['bub_dn_accom', 'intermed_up']), (12, 'C', 5), (13, 'B'), (14, 'C', 15)]),
             (1, [(15, 'C', 14), (16, 'C')])
         ])
         expected = OrderedDict([
@@ -164,9 +167,9 @@ class TestPowerPairedDrawGeneratorParts(unittest.TestCase):
 
     def test_intermediate_brackets_avoid_conflicts_2(self):
         brackets = OrderedDict([
-            (4, [(1, 'A'), (2, 'B'), (3, 'C'), (4, 'A', 'bub_up_accom'), (5, 'C', 12, 'bub_up_inst')]),
-            (3, [(6, 'C'), (7, 'D'), (8, 'A', 'bub_up_accom'), (9, 'B', 10, 'bub_up_hist')]),
-            (2, [(10, 'D', 9), (11, 'A'), (12, 'C', 5), (13, 'B'), (14, 'C', 15)]),
+            (4, [(1, 'A'), (2, 'B'), (3, 'C'), (4, 'A', ['bub_up_accom', 'intermed_dn']), (5, 'C', 12, 'bub_up_inst')]),
+            (3, [(6, 'C', 'intermed_up'), (7, 'D'), (8, 'A', ['bub_up_accom', 'intermed_dn']), (9, 'B', 10, 'bub_up_hist')]),
+            (2, [(10, 'D', 9, 'intermed_up'), (11, 'A'), (12, 'C', 5), (13, 'B'), (14, 'C', 15)]),
             (1, [(15, 'C', 14), (16, 'C')])
         ])
         expected = OrderedDict([
@@ -181,9 +184,9 @@ class TestPowerPairedDrawGeneratorParts(unittest.TestCase):
 
     def test_intermediate_brackets_avoid_conflicts_3(self):
         brackets = OrderedDict([
-            (4, [(1, 'A'), (2, 'B'), (3, 'C'), (4, 'A', 'bub_up_accom'), (5, 'C', 12, 'bub_up_inst')]),
-            (3, [(6, 'C'), (7, 'D'), (8, 'D'), (9, 'B', 10)]),
-            (2, [(10, 'D', 9, 'bub_dn_hist'), (11, 'A', 'bub_dn_accom'), (12, 'C', 5), (13, 'B'), (14, 'C', 15)]),
+            (4, [(1, 'A'), (2, 'B'), (3, 'C'), (4, 'A', ['bub_up_accom', 'intermed_dn']), (5, 'C', 12, 'bub_up_inst')]),
+            (3, [(6, 'C', 'intermed_up'), (7, 'D'), (8, 'D'), (9, 'B', 10, 'intermed_dn')]),
+            (2, [(10, 'D', 9, 'bub_dn_hist'), (11, 'A', ['bub_dn_accom', 'intermed_up']), (12, 'C', 5), (13, 'B'), (14, 'C', 15)]),
             (1, [(15, 'C', 14), (16, 'C')])
         ])
         expected = OrderedDict([
@@ -198,9 +201,9 @@ class TestPowerPairedDrawGeneratorParts(unittest.TestCase):
 
     def test_intermediate_brackets_avoid_conflicts_none(self):
         brackets = OrderedDict([
-            (4, [(1, 'A'), (2, 'B'), (3, 'C'), (4, 'A'), (5, 'C', 12)]),
-            (3, [(6, 'B'), (7, 'D'), (8, 'D'), (9, 'B')]),
-            (2, [(10, 'D'), (11, 'A'), (12, 'C', 5), (13, 'B'), (14, 'C', 15)]),
+            (4, [(1, 'A'), (2, 'B'), (3, 'C'), (4, 'A'), (5, 'C', 12, 'intermed_dn')]),
+            (3, [(6, 'B', 'intermed_up'), (7, 'D'), (8, 'D'), (9, 'B', 'intermed_dn')]),
+            (2, [(10, 'D', 'intermed_up'), (11, 'A'), (12, 'C', 5), (13, 'B'), (14, 'C', 15)]),
             (1, [(15, 'C', 14), (16, 'C')])
         ])
         expected = OrderedDict([
@@ -215,9 +218,9 @@ class TestPowerPairedDrawGeneratorParts(unittest.TestCase):
 
     def test_intermediate_brackets_avoid_conflicts_exhaust(self):
         brackets = OrderedDict([
-            (4, [(1, 'A'), (2, 'B'), (3, 'C'), (4, 'A', 'bub_up_accom'), (5, 'C', 12, 'bub_up_inst')]),
-            (3, [(6, 'C'), (7, 'D'), (8, 'D'), (9, 'B', 10, 'no_bub_updn')]),
-            (2, [(10, 'D', 9), (11, 'B'), (12, 'C', 5), (13, 'B'), (14, 'C', 15)]),
+            (4, [(1, 'A'), (2, 'B'), (3, 'C'), (4, 'A', ['bub_up_accom', 'intermed_dn']), (5, 'C', 12, 'bub_up_inst')]),
+            (3, [(6, 'C', 'intermed_up'), (7, 'D'), (8, 'D'), (9, 'B', 10, ['no_bub_updn', 'intermed_dn'])]),
+            (2, [(10, 'D', 9, 'intermed_up'), (11, 'B'), (12, 'C', 5), (13, 'B'), (14, 'C', 15)]),
             (1, [(15, 'C', 14), (16, 'C')])
         ])
         expected = OrderedDict([
@@ -368,66 +371,66 @@ class TestPowerPairedDrawGenerator(unittest.TestCase):
     expected = dict()
     expected[1] = [dict(odd_bracket="pullup_top", pairing_method="slide",
                         avoid_conflicts="one_up_one_down", side_allocations="balance"), [
-                    (12,  2, ["pullup"], True),
-                    ( 3, 14, ["1u1d_hist"], True),
-                    (11,  4, ["1u1d_other"], False),
-                    ( 6,  7, ["1u1d_other", "pullup"], True),
-                    (17,  8, ["1u1d_hist"], True),
-                    ( 9, 24, ["1u1d_other"], False),
-                    (15, 23, ["1u1d_inst"], True),
-                    (18, 25, [], False),
-                    (22,  1, ["pullup"], True),
-                    ( 5, 19, ["1u1d_other"], True),
-                    (10, 21, ["1u1d_inst"], False),
-                    (16, 13, ["1u1d_other", "pullup"], True),
-                    (20, 26, ["1u1d_hist"], True)]]
+                    (12,  2, [], [], ["pullup"], True),
+                    ( 3, 14, ["1u1d_hist"], [], [], True),
+                    (11,  4, ["1u1d_other"], [], [], False),
+                    ( 6,  7, ["1u1d_other"], [], ["pullup"], True),
+                    (17,  8, ["1u1d_hist"], [], [], True),
+                    ( 9, 24, ["1u1d_other"], [], [], False),
+                    (15, 23, ["1u1d_inst"], [], [], True),
+                    (18, 25, [], [], [], False),
+                    (22,  1, [], [], ["pullup"], True),
+                    ( 5, 19, ["1u1d_other"], [], [], True),
+                    (10, 21, ["1u1d_inst"], [], [], False),
+                    (16, 13, ["1u1d_other"], [], ["pullup"], True),
+                    (20, 26, ["1u1d_hist"], [], [], True)]]
     expected[2] = [dict(odd_bracket="intermediate_bubble_up_down",
                         pairing_method="slide", avoid_conflicts="one_up_one_down",
                         side_allocations="balance"), [
-                    (12, 2, [], True),
-                    (3, 17, [], True), # institution conflict, but swapping
+                    (12, 2, [], ["intermed_dn"], ["intermed_up"], True),
+                    (3, 17, [], [], [], True), # institution conflict, but swapping
                                        # would give history conflict
-                    (11, 14, ["1u1d_inst"], True),
-                    (6, 4, ["1u1d_other"], False),
-                    (8, 7, [], True),
-                    (9, 22, [], True),
-                    (15, 23, [], True),
-                    (18, 24, [], False),
-                    (1, 25, [], False),
-                    (5, 20, [], False),
-                    (10, 21, [], False),
-                    (16, 26, ["bub_up_hist"], True),
-                    (19, 13, ["bub_up_accom"], False)]]
+                    (11, 14, ["1u1d_inst"], [], [], True),
+                    (6, 4, ["1u1d_other"], [], [], False),
+                    (8, 7, [], ["intermed_dn"], ["intermed_up"], True),
+                    (9, 22, [], [], [], True),
+                    (15, 23, [], [], [], True),
+                    (18, 24, [], [], [], False),
+                    (1, 25, [], ["intermed_up"], ["intermed_dn"], False),
+                    (5, 20, [], [], [], False),
+                    (10, 21, [], [], [], False),
+                    (16, 26, [], [], ["bub_up_hist"], True),
+                    (19, 13, [], ["bub_up_accom", "intermed_dn"], ["intermed_up"], False)]]
     expected[3] = [dict(odd_bracket="intermediate1", pairing_method="fold",
                         avoid_conflicts="off", side_allocations="preallocated"), [
-                    (12, 11, [], False),
-                    ( 2,  8, [], False),
-                    ( 3, 17, [], False),
-                    ( 4,  6, [], False),
-                    (14, 15, [], False),
-                    ( 7, 22, [], False),
-                    ( 9, 18, [], False),
-                    (23, 16, [], False),
-                    (24,  5, [], False),
-                    (25,  1, [], False),
-                    (10, 26, [], False),
-                    (20, 19, [], False),
-                    (21, 13, [], False)]]
+                    (12, 11, [], ["intermed_dn"], ["intermed_up"], False),
+                    ( 2,  8, [], [], [], False),
+                    ( 3, 17, [], [], [], False),
+                    ( 4,  6, [], [], [], False),
+                    (14, 15, [], ["intermed_dn"], ["intermed_up"], False),
+                    ( 7, 22, [], [], [], False),
+                    ( 9, 18, [], [], [], False),
+                    (23, 16, [], ["intermed_dn"], ["intermed_up"], False),
+                    (24,  5, [], ["intermed_dn"], ["intermed_up"], False),
+                    (25,  1, [], ["intermed_dn"], ["intermed_up"], False),
+                    (10, 26, [], [], [], False),
+                    (20, 19, [], [], [], False),
+                    (21, 13, [], ["intermed_dn"], ["intermed_up"], False)]]
     expected[4] = [dict(odd_bracket="intermediate2", pairing_method="fold",
                         avoid_conflicts="off", side_allocations="preallocated"), [
-                    (12, 11, [], False),
-                    ( 2,  8, [], False),
-                    ( 3, 17, [], False),
-                    ( 4,  6, [], False),
-                    (14, 15, [], False),
-                    ( 7, 22, [], False),
-                    ( 9, 18, [], False),
-                    (23, 16, [], False),
-                    (24,  5, [], False),
-                    (25,  1, [], False),
-                    (10, 26, [], False),
-                    (20, 19, [], False),
-                    (21, 13, [], False)]]
+                    (12, 11, [], ["intermed_dn"], ["intermed_up"], False),
+                    ( 2,  8, [], [], [], False),
+                    ( 3, 17, [], [], [], False),
+                    ( 4,  6, [], [], [], False),
+                    (14, 15, [], ["intermed_dn"], ["intermed_up"], False),
+                    ( 7, 22, [], [], [], False),
+                    ( 9, 18, [], [], [], False),
+                    (23, 16, [], ["intermed_dn"], ["intermed_up"], False),
+                    (24,  5, [], ["intermed_dn"], ["intermed_up"], False),
+                    (25,  1, [], ["intermed_dn"], ["intermed_up"], False),
+                    (10, 26, [], [], [], False),
+                    (20, 19, [], [], [], False),
+                    (21, 13, [], ["intermed_dn"], ["intermed_up"], False)]]
 
     def do_draw(self, standings, options):
         standings = [TestTeam(*args, **kwargs) for args, kwargs in standings]
@@ -438,14 +441,19 @@ class TestPowerPairedDrawGenerator(unittest.TestCase):
         standings = self.standings[standings_key]
         kwargs, expected = self.expected[expected_key]
         draw = self.do_draw(standings, kwargs)
-        for actual, (exp_aff, exp_neg, exp_flags, same_affs) in zip(draw, expected):
+        for actual, (exp_aff, exp_neg, exp_debate_flags, exp_team1_flags, exp_team2_flags, same_affs) in zip(draw, expected):
             actual_teams = (actual.aff_team.id, actual.neg_team.id)
             expected_teams = (exp_aff, exp_neg)
             if same_affs:
                 self.assertItemsEqual(actual_teams, expected_teams)
             else:
                 self.assertEqual(actual_teams, expected_teams)
-            self.assertEqual(actual.flags, exp_flags)
+            self.assertEqual(actual.flags, exp_debate_flags)
+
+            team1 = actual.aff_team if actual.aff_team.id == exp_aff else actual.neg_team
+            team2 = actual.neg_team if actual.neg_team.id == exp_neg else actual.aff_team
+            self.assertEqual(actual.get_team_flags(team1), exp_team1_flags)
+            self.assertEqual(actual.get_team_flags(team2), exp_team2_flags)
 
     def test_1_1(self):
         self.draw_test(1, 1)
