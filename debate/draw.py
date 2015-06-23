@@ -538,6 +538,8 @@ class PowerPairedDrawGenerator(BaseDrawGenerator):
         for points, teams in brackets.iteritems():
             if pullup_needed_for:
                 pullup_eligible_teams = filter(self._pullup_filter(), teams)
+                if len(pullup_eligible_teams) == 0: # if none are eligible, just pick again
+                    pullup_eligible_teams = teams
                 pullup_team = pullup_eligible_teams[pos(len(teams))]
                 teams.remove(pullup_team)
                 self.add_team_flag(pullup_team, "pullup")
