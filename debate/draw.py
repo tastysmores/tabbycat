@@ -242,9 +242,13 @@ class BaseDrawGenerator(object):
         if callable(option):
             return option
         try:
-            return getattr(self, option_dict[option])
+            option = option_dict[option]
         except KeyError:
             raise ValueError("Invalid option for {1}: {0}".format(option, option_name))
+        if callable(option):
+            return option
+        else:
+            return getattr(self, option)
 
     def add_team_flag(self, team, flag):
         """Attaches a flag to a team.
@@ -407,6 +411,7 @@ class RandomWithAllocatedSidesDrawGenerator(RandomDrawGenerator):
 class PowerPairedDrawGenerator(BaseDrawGenerator):
     """Power-paired draw.
     If there are allocated sides, use PowerPairedWithAllocatedSidesDrawGenerator instead.
+
     Options:
         "odd_bracket" - Odd bracket resolution method, values can be one of:
             "pullup_top"    - pull up the top team from the next bracket down.
@@ -418,6 +423,7 @@ class PowerPairedDrawGenerator(BaseDrawGenerator):
                 that conflict by history or institution.
             or a function taking a dict mapping floats to lists of Team-like objects,
                 and operating on the dict in-place.
+
         "pairing_method" - How to pair teams, values can be one of:
             (best explained by example, these examples have a ten-team bracket)
             "slide"  - 1 vs 6, 2 vs 7, ..., 5 vs 10.
@@ -426,10 +432,17 @@ class PowerPairedDrawGenerator(BaseDrawGenerator):
             or a function taking a dict mapping floats to even-length lists of
                 Team-like objects, and returning a list of Pairing objects with
                 those teams.
+
         "avoid_conflicts" - How to avoid conflicts.
             "one_up_one_down" - swap conflicted teams with the debate above or below,
                 in accordance with Australasian Intervarsity Debating Association rules.
-            "off" - which turns off conflict avoidance.
+            "off"             - turns off conflict avoidance.
+
+        "pullup_eligibility" - Which teams are eligible for pullups.
+            "all"  - all teams can be pulled up.
+            "attr" - all teams have an attribute "pullup_eligible" that is True
+                     if it can be pulled up, False if it cannot. (The caller
+                     must annotate the teams appropriately.)
     """
 
     can_be_first_round = False
@@ -438,14 +451,17 @@ class PowerPairedDrawGenerator(BaseDrawGenerator):
     draw_type = "preliminary"
 
     DEFAULT_OPTIONS = {
-        "odd_bracket"    : "intermediate_bubble_up_down",
-        "pairing_method" : "slide",
-        "avoid_conflicts": "one_up_one_down"
+        "odd_bracket"       : "intermediate_bubble_up_down",
+        "pairing_method"    : "slide",
+        "avoid_conflicts"   : "one_up_one_down",
+        "pullup_eligibility": "all",
     }
 
     def __init__(self, *args, **kwargs):
         super(PowerPairedDrawGenerator, self).__init__(*args, **kwargs)
         self.check_teams_for_attribute("points")
+        if self.options["pullup_eligibility"] == "attr":
+            self.check_teams_for_attribute("pullup_eligible")
 
     def make_draw(self):
         self._brackets = self._make_raw_brackets()
@@ -473,6 +489,19 @@ class PowerPairedDrawGenerator(BaseDrawGenerator):
                 pool.append(teams.pop(0))
             brackets[points] = pool
         return brackets
+
+    ## Pullup eligibility filters
+
+    PULLUP_ELIGIBILITY_FILTERS = {
+        "all" : lambda x: True,
+        "attr": lambda x: x.pullup_eligible,
+    }
+
+    def _pullup_filter(self):
+        """Returns a function that takes one argument, a team, and returns a
+        bool, indicating whether that team is eligible to be pulled up."""
+        filterfunc = self.get_option_function("pullup_eligibility", self.PULLUP_ELIGIBILITY_FILTERS)
+        return filterfunc # return the function itself
 
     ## Odd bracket resolutions
 
@@ -508,7 +537,9 @@ class PowerPairedDrawGenerator(BaseDrawGenerator):
         pullup_needed_for = None
         for points, teams in brackets.iteritems():
             if pullup_needed_for:
-                pullup_team = teams.pop(pos(len(teams)))
+                pullup_eligible_teams = filter(self._pullup_filter(), teams)
+                pullup_team = pullup_eligible_teams[pos(len(teams))]
+                teams.remove(pullup_team)
                 self.add_team_flag(pullup_team, "pullup")
                 pullup_needed_for.append(pullup_team)
                 pullup_needed_for = None
@@ -744,9 +775,10 @@ class PowerPairedWithAllocatedSidesDrawGenerator(PowerPairedDrawGenerator):
     """
 
     DEFAULT_OPTIONS = {
-        "odd_bracket"    : "intermediate1",
-        "pairing_method" : "fold",
-        "avoid_conflicts": None,
+        "odd_bracket"       : "intermediate1",
+        "pairing_method"    : "fold",
+        "avoid_conflicts"   : None,
+        "pullup_eligibility": "all",
     }
 
     def __init__(self, *args, **kwargs):
