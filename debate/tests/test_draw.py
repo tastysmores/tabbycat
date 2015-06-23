@@ -1,4 +1,8 @@
-import os.path, sys
+if __name__ == "__main__":
+    import sys, os.path
+    if os.path.abspath("../..") not in sys.path:
+        sys.path.append(os.path.abspath("../.."))
+
 import unittest
 from collections import OrderedDict
 from debate.draw import DrawGenerator, Pairing, DrawError

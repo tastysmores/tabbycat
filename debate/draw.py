@@ -535,14 +535,25 @@ class PowerPairedDrawGenerator(BaseDrawGenerator):
         brackets.clear()
         brackets.update(new)
 
+    @staticmethod
+    def _iter_brackets(brackets):
+        """Iterates (points, teams) where points is an integer and teams is a
+        list of teams. This method is overridden in
+        PowerPairedWithAllocatedSidesDrawGenerator.
+        """
+        return brackets.iteritems()
+
     def _intermediate_bubbles_add_team_flags(self, brackets):
         """Adds team flags to teams in intermediate brackets.
         Requires Team.points to be defined."""
-        for points, teams in brackets.iteritems():
+        # Skip if teams are integers (for unit test purposes)
+        for points, teams in self._iter_brackets(brackets):
             if int(points) != points:
                 for team in teams:
                     if not hasattr(team, "points"):
-                        raise DrawError("To use intermediate bubbles, teams must have a 'points' attribute defined.")
+                        if type(team) in (int, str): # allow int/str teams to simplify unit tests
+                            continue
+                        raise DrawError("To use intermediate bubbles, teams must have a 'points' attribute defined.\n"+str(brackets))
                     if team.points > points:
                         self.add_team_flag(team, "intermed_dn")
                     elif team.points < points:
@@ -834,6 +845,16 @@ class PowerPairedWithAllocatedSidesDrawGenerator(PowerPairedDrawGenerator):
 
         if pullups_needed_for:
             raise DrawError("Last bracket still needed pullups!\n" + repr(pullups_needed_for))
+
+    @staticmethod
+    def _iter_brackets(brackets):
+        """Iterates (points, teams) where points is an integer and teams is a
+        list of teams. This method is overridden in
+        PowerPairedWithAllocatedSidesDrawGenerator.
+        """
+        for points, pool in brackets.iteritems():
+            for side, teams in pool.iteritems():
+                yield points, teams
 
     def _intermediate_bubbles_1(self, brackets):
         """Operates in-place.
