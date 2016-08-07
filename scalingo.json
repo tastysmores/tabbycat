@@ -1,0 +1,15 @@
+{
+    "name": "Tabbycat",
+    "description": "Debating tournament tabulation software for two-team parliamentary formats",
+    "repository": "https://github.com/czlee/tabbycat",
+    "website": "https://tabbycat.readthedocs.io/",
+    "addons": [
+        "scalingo-postgresql"
+    ],
+    "env": {
+        "DJANGO_SECRET_KEY": {
+            "description": "A secret key for cryptographic signing of user sessions.",
+            "generator": "secret"
+        }
+    }
+}
